@@ -19,19 +19,6 @@ SPDX-License-Identifier: Apache-2.0
 from binascii import hexlify
 from enum import IntEnum
 from time import sleep
-import logging
-
-logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
-rootLogger = logging.getLogger()
-rootLogger.setLevel(logging.DEBUG)
-
-fileHandler = logging.FileHandler("{0}/{1}.log".format('.', 'app'))
-fileHandler.setFormatter(logFormatter)
-rootLogger.addHandler(fileHandler)
-
-consoleHandler = logging.StreamHandler()
-consoleHandler.setFormatter(logFormatter)
-#rootLogger.addHandler(consoleHandler)
 
 #from RPi import GPIO
 
@@ -265,7 +252,7 @@ class Rak811(object):
         This is a "blocking" call: it will either return a list of events or
         raise a Rack811TimeoutError.
         """
-        return [i[len(RESPONSE_EVENT):] for i in self._serial.get_events(timeout)]
+        return [i for i in self._serial.get_events(timeout)]
 
     """System commands."""
 
@@ -463,21 +450,21 @@ class Rak811(object):
         # Check for downlink
         for event in events:
             # Format: <status >,<port>[,<rssi>][,<snr>],<len>[,<data>]
-            event_items = event.split(',')
+            event_items = event.split('=')
             status = event_items.pop(0)
-            status = self._int(status)
-            if status == EventCode.RECV_DATA:
+            if status == RESPONSE_EVENT:
                 self._add_downlink(event_items)
-        # Check for errors
-        for event in events:
-            print("event {0}".format(event))
-            status = event.split(',')[0]
-            status = self._int(status)
-            if status not in (EventCode.RECV_DATA,
-                              EventCode.TX_COMFIRMED,
-                              EventCode.TX_UNCOMFIRMED,
-                              EventCode.LORA_TX_SUCCESS):
-                raise Rak811EventError(status)
+
+        # # Check for errors
+        # for event in events:
+        #     print("event {0}".format(event))
+        #     status = event.split(',')[0]
+        #     status = self._int(status)
+        #     if status not in (EventCode.RECV_DATA,
+        #                       EventCode.TX_COMFIRMED,
+        #                       EventCode.TX_UNCOMFIRMED,
+        #                       EventCode.LORA_TX_SUCCESS):
+        #         raise Rak811EventError(status)
 
     def send(self, data, confirm=False, port=1):
         """Send LoRaWan message.
