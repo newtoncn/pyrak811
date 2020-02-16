@@ -23,13 +23,14 @@ SPDX-License-Identifier: Apache-2.0
 """
 from random import randint
 from sys import exit
-from time import time
+from time import time, sleep
 
 from rak811 import Mode, Rak811
+import traceback as tb
 
 # Send packet every P2P_BASE + (0..P2P_RANDOM) seconds
-P2P_BASE = 30
-P2P_RANDOM = 60
+P2P_BASE = 5
+P2P_RANDOM = 5
 
 # Magic key to recognize our messages
 P2P_MAGIC = b'\xca\xfe'
@@ -38,8 +39,9 @@ lora = Rak811()
 
 # Most of the setup should happen only once...
 print('Setup')
-lora.hard_reset()
 lora.mode = Mode.LoRaP2P
+
+# Set mode as P2P
 
 # RF configuration
 # - Avoid LoRaWan channels (You will get quite a lot of spurious packets!)
@@ -56,8 +58,7 @@ try:
     while True:
         # Calculate next message send timestamp
         next_send = time() + P2P_BASE + randint(0, P2P_RANDOM)
-        # Set module in receive mode
-        lora.rxc()
+
         # Loop until we reach the next send time
         # Don't enter loop for small wait times (<1 1 sec.)
         while (time() + 1) < next_send:
@@ -81,13 +82,12 @@ try:
                 else:
                     print('Foreign message received')
         # Time to send message
-        # Exit receive mode
-        lora.rx_stop()
         counter += 1
         print('Send message {}'.format(counter))
         lora.txc(P2P_MAGIC + bytes.fromhex('{:08x}'.format(counter)))
 
-except:  # noqa: E722
+except Exception as e:  # noqa: E722
+    print(e)
     pass
 
 print('All done')

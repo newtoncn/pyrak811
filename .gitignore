@@ -8,3 +8,6 @@ dist
 .coverage
 htmlcov
 .tox
+.env
+.idea
+*app.log

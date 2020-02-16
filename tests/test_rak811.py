@@ -43,7 +43,7 @@ def test_instantiate_default(mock_serial):
 @patch('rak811.rak811.Rak811Serial', autospec=True)
 def test_instantiate_params(mock_serial):
     """Test that Rak811 passes parameters passed to RackSerial."""
-    port = '/dev/ttyAMA0'
+    port = '/dev/ttyUSB0'
     timeout = 5
     lora = Rak811(port=port, timeout=timeout)
     mock_serial.assert_called_once_with(port=port, timeout=timeout)
