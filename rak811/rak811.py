@@ -231,6 +231,7 @@ class Rak811(object):
         Rack811TimeoutError will be raised.
         """
         self._serial.send_command(command)
+        #self._process_events()
         response = self._serial.get_response()
 
         # Ignore events received while waiting on command feedback
@@ -296,7 +297,7 @@ class Rak811(object):
     def mode(self, value):
         """Set module in LoRaWan or LoRaP2P Mode."""
         # Mode setter has an OK response
-        response = self._send_command('set_config=lora:work_mode:{0}'.format(value))
+        self._send_command('set_config=lora:work_mode:{0}'.format(value))
 
     @property
     def recv_ex(self):
@@ -411,24 +412,24 @@ class Rak811(object):
 
         Event is a list: (<port>[,<rssi>][,<snr>],<len>[,<data>])
         """
-        r_port = self._int(event.pop(0))
         if len(event) > 2:
             r_rssi = self._int(event.pop(0))
             r_snr = self._int(event.pop(0))
         else:
             r_rssi = 0
             r_snr = 0
-        r_len = self._int(event.pop(0))
-        if r_len > 0:
+        #r_len includes Data, hence we split it on : to get the data
+        r_len = self._int(event.pop(0)).split(':')
+        print(r_len)
+        if self._int(r_len[0]) > 0:
             try:
-                r_data = bytes.fromhex(event[0])
+                r_data = bytes.fromhex(r_len[1])
             except ValueError:
                 r_data = ''
         else:
             r_data = ''
         self._downlink.append(
             {
-                'port': r_port,
                 'rssi': r_rssi,
                 'snr': r_snr,
                 'len': r_len,
@@ -449,11 +450,11 @@ class Rak811(object):
         events = self._get_events(timeout)
         # Check for downlink
         for event in events:
-            # Format: <status >,<port>[,<rssi>][,<snr>],<len>[,<data>]
+            # Format: at+rec=<status >,<port>[,<rssi>][,<snr>],<len>[,<data>]
             event_items = event.split('=')
             status = event_items.pop(0)
-            if status == RESPONSE_EVENT:
-                self._add_downlink(event_items)
+            if status + "=" == RESPONSE_EVENT:
+                self._add_downlink(event_items.pop(0).split(','))
 
         # # Check for errors
         # for event in events:

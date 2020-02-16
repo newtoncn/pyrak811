@@ -40,7 +40,7 @@ consoleHandler.setFormatter(logFormatter)
 
 # Default instance parameters. Can be overridden  at creation
 # Serial port configuration
-PORT = '/dev/serial0'
+PORT = '/dev/ttyUSB0'
 BAUDRATE = 115200
 # Timeout for the reader thread. Any value will do, the only impact is the time
 # needed to stop the thread when the instance is destroyed...

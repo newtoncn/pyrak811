@@ -72,7 +72,7 @@ try:
                 data = message['data']
                 if data[:len(P2P_MAGIC)] == P2P_MAGIC:
                     print(
-                        'Receveid message: {}'.format(
+                        'Received message: {}'.format(
                             int.from_bytes(data[len(P2P_MAGIC):],
                                            byteorder='big')
                         )

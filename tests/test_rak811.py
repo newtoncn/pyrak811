@@ -466,7 +466,7 @@ def test_set_rf_config_complete(mock_send, mock_rf_config, lora):
 def test_txc(mock_send, mock_events, lora):
     """Test LoraP2P send."""
     lora.txc('Hello')
-    mock_send.assert_called_once_with('txc=1,60000,48656c6c6f')
+    mock_send.assert_called_once_with('send=lorap2p:48656c6c6f')
     mock_events.assert_called_once()
 
 
