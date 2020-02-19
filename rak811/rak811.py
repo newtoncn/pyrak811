@@ -241,9 +241,11 @@ class Rak811(object):
         if response.startswith(RESPONSE_OK):
             response = response[len(RESPONSE_OK):]
         elif response.startswith(RESPONSE_ERROR):
-            raise Rak811ResponseError(response[len(RESPONSE_ERROR):])
+            #raise Rak811ResponseError(response[len(RESPONSE_ERROR):])
+            print("RAKRESPONSEERROR: {}".format((response[len(RESPONSE_ERROR):])))
         else:
-            raise Rak811ResponseError(response)
+            #raise Rak811ResponseError(response)
+            print("RAKRESPONSEERROR: {}".format((response)))
 
         return response
 
@@ -420,7 +422,6 @@ class Rak811(object):
             r_snr = 0
         #r_len includes Data, hence we split it on : to get the data
         r_len = self._int(event.pop(0)).split(':')
-        print(r_len)
         if self._int(r_len[0]) > 0:
             try:
                 r_data = bytes.fromhex(r_len[1])
