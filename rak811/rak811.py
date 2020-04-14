@@ -20,7 +20,10 @@ from binascii import hexlify
 from enum import IntEnum
 from time import sleep
 
-#from RPi import GPIO
+try:
+    from RPi import GPIO
+except:
+    from RPiSim import GPIO
 
 from .exception import Rak811Error
 from .serial import Rak811Serial, Rak811TimeoutError
