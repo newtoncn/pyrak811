@@ -23,7 +23,7 @@ from time import sleep
 try:
     from RPi import GPIO
 except:
-    from RPiSim import GPIO
+    print("Could not load RPi")
 
 from .exception import Rak811Error
 from .serial import Rak811Serial, Rak811TimeoutError
