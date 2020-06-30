@@ -23,7 +23,8 @@ import sys
 try:
     from RPi import GPIO
 except:
-    print("Could not load RPi")
+    print("Could not load GPIO, using fake_rpi ")
+    import fake_rpi
 
 from .exception import Rak811Error
 from .serial import Rak811Serial, Rak811TimeoutError
@@ -181,6 +182,8 @@ class Rak811(object):
         """
         if 'GPIO' in sys.modules:
             self._serial = Rak811Serial(**kwargs)
+        else:
+            self._serial = None
 
         self._downlink = []
         self.base_config = {

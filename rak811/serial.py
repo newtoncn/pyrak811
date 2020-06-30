@@ -34,10 +34,6 @@ fileHandler = logging.FileHandler("{0}/{1}.log".format('.', 'app'))
 fileHandler.setFormatter(logFormatter)
 rootLogger.addHandler(fileHandler)
 
-#consoleHandler = logging.StreamHandler()
-#consoleHandler.setFormatter(logFormatter)
-#rootLogger.addHandler(consoleHandler)
-
 # Default instance parameters. Can be overridden  at creation
 # Serial port configuration
 PORT = '/dev/serial0'
