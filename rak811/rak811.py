@@ -19,7 +19,7 @@ SPDX-License-Identifier: Apache-2.0
 from binascii import hexlify
 from enum import IntEnum
 from time import sleep
-
+import sys
 try:
     from RPi import GPIO
 except:
@@ -179,7 +179,7 @@ class Rak811(object):
         The serial port is immediately opened and flushed.
         All parameters are optional and passed to RackSerial.
         """
-        if GPIO is not None:
+        if 'GPIO' in sys.modules:
             self._serial = Rak811Serial(**kwargs)
 
         self._downlink = []
