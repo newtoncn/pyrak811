@@ -20,7 +20,10 @@ from binascii import hexlify
 from enum import IntEnum
 from time import sleep
 
-from RPi import GPIO
+try:
+    from RPi import GPIO
+except:
+    from RPiSim import GPIO
 
 from .exception import Rak811Error
 from .serial import Rak811Serial, Rak811TimeoutError
@@ -80,6 +83,7 @@ class EventCode(IntEnum):
     DOWNLINK_REPEATED = 7
     WAKE_UP = 8
     P2PTX_COMPLETE = 9
+    LORA_TX_SUCCESS = 10
     UNKNOWN = 100
 
 
@@ -93,8 +97,9 @@ EVENT_MESSAGE = {
     EventCode.RX2_TIMEOUT: 'Rx2 timeout',
     EventCode.DOWNLINK_REPEATED: 'Downlink repeated',
     EventCode.WAKE_UP: 'Wake up',
-    EventCode.P2PTX_COMPLETE: 'P2P tx complete',
-    EventCode.UNKNOWN: 'Unknown',
+    EventCode.P2PTX_COMPLETE: 'LoRaP2P send success',
+    EventCode.LORA_TX_SUCCESS: 'LoRaP2P send success',
+    EventCode.UNKNOWN: 'Unknown'
 }
 
 
@@ -176,6 +181,14 @@ class Rak811(object):
         """
         self._serial = Rak811Serial(**kwargs)
         self._downlink = []
+        self.base_config = {
+            'freq': 869.525,
+            'sf': 12,
+            'bw': 0,
+            'prlen': 8,
+            'cr': 1,
+            'pw': 20,
+        }
 
     def close(self):
         """Terminates session.
@@ -192,13 +205,13 @@ class Rak811(object):
         Note that we do not cleanup() as the reset port should stay high (it is
         configured that way at boot time).
         """
-        GPIO.setwarnings(False)
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(RESET_BCM_PORT, GPIO.OUT)
-        GPIO.output(RESET_BCM_PORT, GPIO.LOW)
-        sleep(RESET_DELAY)
-        GPIO.output(RESET_BCM_PORT, GPIO.HIGH)
-        sleep(RESET_POST)
+        # GPIO.setwarnings(False)
+        # GPIO.setmode(GPIO.BCM)
+        # GPIO.setup(RESET_BCM_PORT, GPIO.OUT)
+        # GPIO.output(RESET_BCM_PORT, GPIO.LOW)
+        # sleep(RESET_DELAY)
+        # GPIO.output(RESET_BCM_PORT, GPIO.HIGH)
+        # sleep(RESET_POST)
 
     def _int(self, i):
         """Attempt int conversion."""
@@ -221,6 +234,7 @@ class Rak811(object):
         Rack811TimeoutError will be raised.
         """
         self._serial.send_command(command)
+        #self._process_events()
         response = self._serial.get_response()
 
         # Ignore events received while waiting on command feedback
@@ -230,9 +244,11 @@ class Rak811(object):
         if response.startswith(RESPONSE_OK):
             response = response[len(RESPONSE_OK):]
         elif response.startswith(RESPONSE_ERROR):
-            raise Rak811ResponseError(response[len(RESPONSE_ERROR):])
+            #raise Rak811ResponseError(response[len(RESPONSE_ERROR):])
+            print("RAKRESPONSEERROR: {}".format((response[len(RESPONSE_ERROR):])))
         else:
-            raise Rak811ResponseError(response)
+            #raise Rak811ResponseError(response)
+            print("RAKRESPONSEERROR: {}".format((response)))
 
         return response
 
@@ -242,8 +258,7 @@ class Rak811(object):
         This is a "blocking" call: it will either return a list of events or
         raise a Rack811TimeoutError.
         """
-        return [i[len(RESPONSE_EVENT):] for i in
-                self._serial.get_events(timeout)]
+        return [i for i in self._serial.get_events(timeout)]
 
     """System commands."""
 
@@ -286,7 +301,8 @@ class Rak811(object):
     @mode.setter
     def mode(self, value):
         """Set module in LoRaWan or LoRaP2P Mode."""
-        self._send_command('mode={0}'.format(value))
+        # Mode setter has an OK response
+        self._send_command('set_config=lora:work_mode:{0}'.format(value))
 
     @property
     def recv_ex(self):
@@ -354,53 +370,6 @@ class Rak811(object):
         return self._send_command('get_config={0}'.format(key))
 
     @property
-    def band(self):
-        """Get LoRaWan region.
-
-        Region is one of: EU868, US915, AU915, KR920, AS923, IN865.
-        """
-        return(self._send_command('band'))
-
-    @band.setter
-    def band(self, region):
-        """Set LoRaWan region.
-
-        Region must be one of: EU868, US915, AU915, KR920, AS923, IN865.
-        """
-        self._send_command('band={0}'.format(region))
-
-    def join_abp(self):
-        """Join the configured network in ABP mode.
-
-        ABP requires the following parameters to be set prior join:
-            - dev_addr
-            - nwks_key
-            - apps_key
-        """
-        self._send_command('join=abp')
-
-    def join_otaa(self):
-        """Join the configured network in OTAA mode.
-
-        OTAA requires the following parameters to be set prior join:
-            - dev_eui
-            - app_eui
-            - app_key
-
-        This call is "blocking", it will return only after the join completes.
-        The following exceptions can be raised:
-            - Rak811TimeoutError: join didn't succeed in time
-            - Rak811EventError: join failed
-        """
-        self._send_command('join=otaa')
-        # Waiting join completion
-        for event in self._get_events():
-            status = event.split(',')[0]
-            status = self._int(status)
-            if status != EventCode.JOINED_SUCCESS:
-                raise Rak811EventError(status)
-
-    @property
     def signal(self):
         """Get (RSSI,SNR) from latest received packet."""
         return(tuple(self._int(i)
@@ -448,24 +417,23 @@ class Rak811(object):
 
         Event is a list: (<port>[,<rssi>][,<snr>],<len>[,<data>])
         """
-        r_port = self._int(event.pop(0))
         if len(event) > 2:
             r_rssi = self._int(event.pop(0))
             r_snr = self._int(event.pop(0))
         else:
             r_rssi = 0
             r_snr = 0
-        r_len = self._int(event.pop(0))
-        if r_len > 0:
+        #r_len includes Data, hence we split it on : to get the data
+        r_len = self._int(event.pop(0)).split(':')
+        if self._int(r_len[0]) > 0:
             try:
-                r_data = bytes.fromhex(event[0])
+                r_data = bytes.fromhex(r_len[1])
             except ValueError:
                 r_data = ''
         else:
             r_data = ''
         self._downlink.append(
             {
-                'port': r_port,
                 'rssi': r_rssi,
                 'snr': r_snr,
                 'len': r_len,
@@ -486,20 +454,22 @@ class Rak811(object):
         events = self._get_events(timeout)
         # Check for downlink
         for event in events:
-            # Format: <status >,<port>[,<rssi>][,<snr>],<len>[,<data>]
-            event_items = event.split(',')
+            # Format: at+rec=<status >,<port>[,<rssi>][,<snr>],<len>[,<data>]
+            event_items = event.split('=')
             status = event_items.pop(0)
-            status = self._int(status)
-            if status == EventCode.RECV_DATA:
-                self._add_downlink(event_items)
-        # Check for errors
-        for event in events:
-            status = event.split(',')[0]
-            status = self._int(status)
-            if status not in (EventCode.RECV_DATA,
-                              EventCode.TX_COMFIRMED,
-                              EventCode.TX_UNCOMFIRMED):
-                raise Rak811EventError(status)
+            if status + "=" == RESPONSE_EVENT:
+                self._add_downlink(event_items.pop(0).split(','))
+
+        # # Check for errors
+        # for event in events:
+        #     print("event {0}".format(event))
+        #     status = event.split(',')[0]
+        #     status = self._int(status)
+        #     if status not in (EventCode.RECV_DATA,
+        #                       EventCode.TX_COMFIRMED,
+        #                       EventCode.TX_UNCOMFIRMED,
+        #                       EventCode.LORA_TX_SUCCESS):
+        #         raise Rak811EventError(status)
 
     def send(self, data, confirm=False, port=1):
         """Send LoRaWan message.
@@ -515,7 +485,7 @@ class Rak811(object):
             data = (bytes)(data, 'utf-8')
         data = hexlify(data).decode('ascii')
 
-        self._send_command('send=' + ','.join((
+        self._send_command('send=lorap2p' + ':'.join((
             ('1' if confirm else '0'),
             str(port),
             data
@@ -551,8 +521,11 @@ class Rak811(object):
 
         Return a dictionary.
         """
+
+        config = self._send_command('get_config=lora:status')
+
         config = tuple(self._int(i)
-                       for i in self._send_command('rf_config').split(','))
+                       for i in self._send_command('set_config').split(','))
         return {
             'freq': config[0] / 1000 / 1000,
             'sf': config[1],
@@ -597,10 +570,11 @@ class Rak811(object):
             prlen: preamble len, range 8-65536 (8)
             pwr: transmit power, range 5,20 (20)
         """
-        base_config = self._get_rf_config()
+        base_config = self.base_config
         base_config.update(config)
-        self._send_command(
-            'rf_config={0},{1},{2},{3},{4},{5}'.format(
+
+        response = self._send_command(
+            'set_config=lorap2p:{0},{1},{2},{3},{4},{5}'.format(
                 int(base_config['freq'] * 1000 * 1000),
                 base_config['sf'],
                 base_config['bw'],
@@ -610,7 +584,7 @@ class Rak811(object):
             )
         )
 
-    def txc(self, data, cnt=1, interval=60):
+    def txc(self, data, cnt=1, interval=10):
         """Send LoraP2P message.
 
         Send data using the pre-set RF parameters.
@@ -631,20 +605,8 @@ class Rak811(object):
             data = (bytes)(data, 'utf-8')
         data = hexlify(data).decode('ascii')
 
-        self._send_command('txc=' + ','.join((
-            str(cnt),
-            str(interval * 1000),
-            data
-        )))
+        self._send_command('send=' + 'lorap2p:' + data)
 
-        # Process events
-        events = self._get_events((cnt * (interval + 10)) - interval)
-        # Check for errors
-        for event in events:
-            status = event.split(',')[0]
-            status = self._int(status)
-            if status != EventCode.P2PTX_COMPLETE:
-                raise Rak811EventError(status)
 
     def rxc(self, report_en=1):
         """Set module in LoraP2P receive mode.

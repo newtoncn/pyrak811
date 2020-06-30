@@ -43,7 +43,7 @@ def test_instantiate_default(mock_serial):
 @patch('rak811.rak811.Rak811Serial', autospec=True)
 def test_instantiate_params(mock_serial):
     """Test that Rak811 passes parameters passed to RackSerial."""
-    port = '/dev/ttyAMA0'
+    port = '/dev/ttyUSB0'
     timeout = 5
     lora = Rak811(port=port, timeout=timeout)
     mock_serial.assert_called_once_with(port=port, timeout=timeout)
@@ -466,7 +466,7 @@ def test_set_rf_config_complete(mock_send, mock_rf_config, lora):
 def test_txc(mock_send, mock_events, lora):
     """Test LoraP2P send."""
     lora.txc('Hello')
-    mock_send.assert_called_once_with('txc=1,60000,48656c6c6f')
+    mock_send.assert_called_once_with('send=lorap2p:48656c6c6f')
     mock_events.assert_called_once()
 
 

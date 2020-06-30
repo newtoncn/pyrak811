@@ -35,7 +35,7 @@ def test_instantiate_default(mock_serial):
 @patch('rak811.serial.Serial')
 def test_instantiate_custom(mock_serial):
     """Test that Rak811Serial can be instantiated - custom parameters."""
-    port = '/dev/ttyAMA0'
+    port = '/dev/ttyUSB0'
     timeout = 5
     bytesize = EIGHTBITS
     rs = Rak811Serial(port=port, timeout=timeout, bytesize=bytesize)

@@ -23,6 +23,21 @@ from time import sleep
 from rak811.exception import Rak811Error
 from serial import Serial
 
+import logging
+import time
+
+logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+rootLogger = logging.getLogger()
+rootLogger.setLevel(logging.DEBUG)
+
+fileHandler = logging.FileHandler("{0}/{1}.log".format('.', 'app'))
+fileHandler.setFormatter(logFormatter)
+rootLogger.addHandler(fileHandler)
+
+#consoleHandler = logging.StreamHandler()
+#consoleHandler.setFormatter(logFormatter)
+#rootLogger.addHandler(consoleHandler)
+
 # Default instance parameters. Can be overridden  at creation
 # Serial port configuration
 PORT = '/dev/serial0'
@@ -37,6 +52,7 @@ RESPONSE_TIMEOUT = 5
 # the module will wait to respect the duty cycle.
 # In normal operation, 5 minutes should be more than enough.
 EVENT_TIMEOUT = 5 * 60
+LORA_TX_SUCCESS = 'LoRaP2P send success'
 
 # Constants
 EOL = '\r\n'
@@ -110,10 +126,11 @@ class Rak811Serial(object):
                     while True:
                         try:
                             line = line.decode('ascii').rstrip(EOL)
+                            #logging.debug("SerialRec:{0}".format(line))
                         except UnicodeDecodeError:
                             # Wrong speed or port not configured properly
                             line = '?'
-                        if match(r'^(OK|ERROR|at+)', line):
+                        if match(r'^(OK|ERROR|at+)', line) and line is not '':
                             self._read_buffer.append(line)
                         sleep(0.1)
                         if self._serial.in_waiting > 0:
@@ -162,7 +179,11 @@ class Rak811Serial(object):
 
     def send_string(self, string):
         """Send string to the module."""
+        #logging.debug("SerialSend:{0}".format(string))
         self._serial.write((bytes)(string, 'utf-8'))
+        # First response should be the command for confirmation
+        response = self.get_response() + '\r\n'
+        #logging.debug("SerialSendResponse:{0}".format(response))
 
     def send_command(self, command):
         """Send AT command to the module."""
