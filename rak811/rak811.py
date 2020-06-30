@@ -179,7 +179,9 @@ class Rak811(object):
         The serial port is immediately opened and flushed.
         All parameters are optional and passed to RackSerial.
         """
-        self._serial = Rak811Serial(**kwargs)
+        if GPIO is not None:
+            self._serial = Rak811Serial(**kwargs)
+
         self._downlink = []
         self.base_config = {
             'freq': 869.525,
