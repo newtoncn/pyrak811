@@ -60,7 +60,7 @@ setup(
             'flake8-import-order',
             'pep8-naming==0.5.0',
             'pytest',
-            'mock',
+            'mock==4.0.2',
             'coverage',
             'tox',
         ],
