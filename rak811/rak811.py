@@ -180,7 +180,7 @@ class Rak811(object):
         The serial port is immediately opened and flushed.
         All parameters are optional and passed to RackSerial.
         """
-        if 'GPIO' in sys.modules:
+        if 'RPi' in sys.modules.keys():
             self._serial = Rak811Serial(**kwargs)
         else:
             self._serial = None
