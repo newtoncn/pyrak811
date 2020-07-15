@@ -23,11 +23,12 @@ import sys
 try:
     from RPi import GPIO
 except:
-    print("Could not load GPIO, using fake_rpi ")
+    logging.debug("Could not load GPIO, using fake_rpi ")
     import fake_rpi
 
 from .exception import Rak811Error
 from .serial import Rak811Serial, Rak811TimeoutError
+import logging
 
 RESET_BCM_PORT = 17
 RESET_DELAY = 0.01
@@ -250,10 +251,10 @@ class Rak811(object):
             response = response[len(RESPONSE_OK):]
         elif response.startswith(RESPONSE_ERROR):
             #raise Rak811ResponseError(response[len(RESPONSE_ERROR):])
-            print("RAKRESPONSEERROR: {}".format((response[len(RESPONSE_ERROR):])))
+            logging.debug("RAKRESPONSEERROR: {}".format((response[len(RESPONSE_ERROR):])))
         else:
             #raise Rak811ResponseError(response)
-            print("RAKRESPONSEERROR: {}".format((response)))
+            logging.debug("RAKRESPONSEERROR: {}".format((response)))
 
         return response
 
@@ -467,7 +468,7 @@ class Rak811(object):
 
         # # Check for errors
         # for event in events:
-        #     print("event {0}".format(event))
+        #     logging.debug("event {0}".format(event))
         #     status = event.split(',')[0]
         #     status = self._int(status)
         #     if status not in (EventCode.RECV_DATA,
