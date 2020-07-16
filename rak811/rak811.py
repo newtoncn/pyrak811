@@ -18,7 +18,7 @@ SPDX-License-Identifier: Apache-2.0
 """
 from binascii import hexlify
 from enum import IntEnum
-from time import sleep
+import logging
 import sys
 try:
     from RPi import GPIO
