@@ -18,7 +18,7 @@ SPDX-License-Identifier: Apache-2.0
 """
 from binascii import hexlify
 from enum import IntEnum
-from time import sleep
+import logging
 import sys
 try:
     from RPi import GPIO
@@ -28,7 +28,6 @@ except:
 
 from .exception import Rak811Error
 from .serial import Rak811Serial, Rak811TimeoutError
-import logging
 
 RESET_BCM_PORT = 17
 RESET_DELAY = 0.01
