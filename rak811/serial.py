@@ -122,12 +122,12 @@ class Rak811Serial(object):
                     while True:
                         try:
                             line = line.decode('ascii').rstrip(EOL)
-                            #logging.debug("SerialRec:{0}".format(line))
+                            logging.debug("SerialRec:{0}".format(line))
                         except UnicodeDecodeError:
                             # Wrong speed or port not configured properly
                             line = '?'
-                        if match(r'^(OK|ERROR|at+)', line) and line is not '':
-                            logging.debug("Read line {}".format(line))
+                        if match("^(?!at\+send)(OK|ERROR|at\+)", line) and line is not '':
+                            logging.debug("Serial read line {}".format(line))
                             self._read_buffer.append(line)
                         sleep(0.1)
                         if self._serial.in_waiting > 0:
@@ -178,9 +178,6 @@ class Rak811Serial(object):
         """Send string to the module."""
         logging.debug("SerialSend:{0}".format(string))
         self._serial.write((bytes)(string, 'utf-8'))
-        # First response should be the command for confirmation
-        response = self.get_response() + '\r\n'
-        logging.debug("SerialSendResponse:{0}".format(response))
 
     def send_command(self, command):
         """Send AT command to the module."""
