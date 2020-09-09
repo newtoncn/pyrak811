@@ -254,7 +254,7 @@ class Rak811(object):
             logging.debug("RAKRESPONSEERROR: {}".format((response[len(RESPONSE_ERROR):])))
         else:
             #raise Rak811ResponseError(response)
-            logging.debug("RAKRESPONSEERROR: {}".format((response)))
+            logging.debug("Unknown error: {}".format((response)))
 
         return response
 
