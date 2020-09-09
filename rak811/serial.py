@@ -127,6 +127,7 @@ class Rak811Serial(object):
                             # Wrong speed or port not configured properly
                             line = '?'
                         if match(r'^(OK|ERROR|at+)', line) and line is not '':
+                            logging.debug("Read line {}".format(line))
                             self._read_buffer.append(line)
                         sleep(0.1)
                         if self._serial.in_waiting > 0:
