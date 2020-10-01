@@ -241,8 +241,12 @@ class Rak811(object):
         """
         self._serial.send_command(command)
         #self._process_events()
-        response = self._serial.get_response()
-
+        try:
+            response = self._serial.get_response()
+        except Exception as e:
+            logging.debug("Could not get response from radio")
+            return
+            
         # Ignore events received while waiting on command feedback
         while response.startswith(RESPONSE_EVENT):
             response = self._serial.get_response()

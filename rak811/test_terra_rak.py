@@ -1,4 +1,3 @@
-import pytest
 from sys import exit
 from time import time, sleep
 from rak811 import Mode, Rak811
